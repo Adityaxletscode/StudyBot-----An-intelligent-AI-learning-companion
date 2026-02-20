@@ -40,7 +40,7 @@ except Exception as e:
     users_collection = None
 
 # Password hashing context
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["pbkdf2_sha256", "bcrypt"], deprecated="auto")
 
 app = FastAPI()
 
@@ -77,10 +77,10 @@ def get_user(user_id):
     return users_collection.find_one({"user_id": user_id})
 
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password[:72], hashed_password)
+    return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password):
-    return pwd_context.hash(password[:72])
+    return pwd_context.hash(password)
 
 @app.post("/auth")
 def authenticate(request: AuthRequest):
