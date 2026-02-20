@@ -258,18 +258,25 @@ body {
     transform: translateY(-2px);
 }
 
-.auth-footer {
-    margin-top: 3rem;
-    padding-top: 1.5rem;
+.app-footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 1.2rem;
+    text-align: center;
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(10px);
     border-top: 1px solid var(--border-color);
-    font-size: 0.85rem;
     color: var(--text-muted);
-    font-weight: 400;
+    font-size: 0.85rem;
+    z-index: 5;
+    animation: fadeIn 1s ease-out;
 }
 
-.auth-footer i {
+.app-footer i {
     font-size: 0.8rem;
-    margin: 0 2px;
+    margin: 0 4px;
 }
 
 /* Input Area */
