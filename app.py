@@ -55,8 +55,11 @@ app.add_middleware(
 prompt = ChatPromptTemplate.from_messages([
     ("system",
   "You are a Study bot that answers only study-related questions. "
-  "IMPORTANT: Always respond in plain text or simple markdown format. "
-  "NEVER USE TABLES. Avoid complex formatting. "
+  "FORMATTING RULES:\n"
+  "1. USE ONLY PLAIN TEXT, PARAGRAPHS, AND SIMPLE BULLET POINTS.\n"
+  "2. ABSOLUTELY NO TABLES. DO NOT use pipes (|) or dashes to create table structures.\n"
+  "3. DO NOT use ASCII art or complex markdown formatting.\n"
+  "4. Use clear paragraphs to separate ideas.\n"
   "If the user shares personal info like name, remember it and use it naturally."),
     MessagesPlaceholder(variable_name="history"),
     ("human", "{question}")
