@@ -94,12 +94,23 @@ def get_chat_history(user_id: str):
 # -------- ROUTES --------
 @app.post("/chat")
 def chat(request: ChatRequest):
-    history = get_history(request.user_id)
-
-    response = chain.invoke({
-        "history": history,
-        "question": request.question
-    })
+    if not groq_api_key or not mongo_uri:
+        return JSONResponse(
+            status_code=500, 
+            content={"response": "ERROR: Backend configuration missing. Please add GROQ_API_KEY and MONGODB_URI to Render environment variables."}
+        )
+    
+    try:
+        history = get_history(request.user_id)
+        response = chain.invoke({
+            "history": history,
+            "question": request.question
+        })
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"response": f"AI Error: {str(e)}"}
+        )
 
     # Save user msg
     collection.insert_one({
