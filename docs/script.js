@@ -22,12 +22,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Handle Start Chat / Login / Register
     startChatBtn.addEventListener('click', async () => {
         const id = userIdInput.value.trim();
-        const pass = userPassInput.value.trim();
+        let pass = userPassInput.value.trim();
         
         if (!id || !pass) {
             alert("Please enter both Username and Password.");
             return;
         }
+
+        // Truncate locally to prevent bcrypt 72-byte error
+        if (pass.length > 72) pass = pass.substring(0, 72);
 
         startChatBtn.disabled = true;
         startChatBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Authenticating...';
