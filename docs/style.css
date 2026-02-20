@@ -258,6 +258,20 @@ body {
     transform: translateY(-2px);
 }
 
+.auth-footer {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+.auth-footer i {
+    font-size: 0.8rem;
+    margin: 0 2px;
+}
+
 /* Input Area */
 .input-area {
     padding: 1rem 1.5rem;
