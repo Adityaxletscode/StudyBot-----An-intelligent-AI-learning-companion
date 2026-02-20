@@ -99,7 +99,7 @@ def authenticate(request: AuthRequest):
         
         # Check password
         if not verify_password(request.password, user["password"]):
-            return JSONResponse(status_code=401, content={"status": "error", "message": "Invalid password"})
+            return JSONResponse(status_code=401, content={"status": "error", "message": "Either password is wrong or username already exists, keep a different username"})
         
         return {"status": "success", "message": "Logged in"}
     except Exception as e:
