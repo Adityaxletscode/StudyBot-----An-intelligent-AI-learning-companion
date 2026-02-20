@@ -10,6 +10,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const switchUserBtn = document.getElementById('switch-user-btn');
     let userId = '';
 
+    // Set the API Base URL
+    // If running on GitHub Pages, point to your Render internal/external URL
+    // If running locally, use localhost
+    const API_BASE_URL = window.location.hostname.includes('github.io') 
+        ? 'https://studybot-an-intelligent-ai-learning.onrender.com' 
+        : window.location.origin;
+
+    console.log("Using API Base URL:", API_BASE_URL);
+
     // Handle Start Chat / Login
     startChatBtn.addEventListener('click', async () => {
         const id = userIdInput.value.trim();
@@ -63,8 +72,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const typingId = showTypingIndicator();
 
         try {
-            // Use absolute path for API calls to ensure it works regardless of page route
-            const response = await fetch(`${window.location.origin}/chat`, {
+            // Use dynamic base URL for cross-environment support
+            const response = await fetch(`${API_BASE_URL}/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -136,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadHistory() {
         if (!userId) return;
         try {
-            const response = await fetch(`${window.location.origin}/history/${userId}`);
+            const response = await fetch(`${API_BASE_URL}/history/${userId}`);
             if (!response.ok) return;
             const history = await response.json();
             
