@@ -339,16 +339,66 @@ body {
 }
 
 /* Scrollbar */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 4px; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+/* Responsive Media Queries */
+
+/* Tablet & Smaller Desktop (below 1024px) */
+@media (max-width: 1024px) {
+    .messages-container, .input-wrapper {
+        max-width: 90%;
+    }
 }
 
-@media (max-width: 600px) {
+/* Large Mobile / Small Tablet (below 768px) */
+@media (max-width: 768px) {
+    .bot-info h2 { font-size: 1rem; }
     .action-btn span { display: none; }
-    .messages-container { padding: 1rem; }
+    .action-btn { padding: 0.5rem; }
+    
+    .msg-content {
+        font-size: 0.95rem;
+        padding: 0.7rem 1rem;
+    }
+    
+    .auth-content {
+        width: 90%;
+        padding: 1.5rem;
+    }
+    
+    .auth-icon { font-size: 3rem; }
+}
+
+/* Small Mobile (below 480px) */
+@media (max-width: 480px) {
+    .chat-header { padding: 0.75rem 1rem; }
+    
+    .messages-container {
+        padding: 1rem;
+        gap: 1rem;
+    }
+    
     .message { max-width: 90%; }
+    
+    .input-area { padding: 0.75rem 1rem; }
+    
+    .input-wrapper {
+        border-radius: 20px;
+        gap: 0.5rem;
+    }
+    
+    #user-input { font-size: 0.9rem; }
+    
+    .app-footer {
+        font-size: 0.75rem;
+        padding: 1rem;
+    }
+}
+
+/* Animation for typing dots */
+@keyframes pulse {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.2); }
 }
