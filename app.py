@@ -54,8 +54,10 @@ app.add_middleware(
 # -------- PROMPT --------
 prompt = ChatPromptTemplate.from_messages([
     ("system",
- "You are a Study bot,that can answer only study-related questions. "
- "If the user shares personal info like name, remember it and use it naturally."),
+  "You are a Study bot that answers only study-related questions. "
+  "IMPORTANT: Always respond in plain text or simple markdown format. "
+  "NEVER USE TABLES. Avoid complex formatting. "
+  "If the user shares personal info like name, remember it and use it naturally."),
     MessagesPlaceholder(variable_name="history"),
     ("human", "{question}")
 ])
