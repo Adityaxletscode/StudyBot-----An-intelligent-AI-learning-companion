@@ -125,7 +125,7 @@ prompt = ChatPromptTemplate.from_messages([
 # -------- MODEL --------
 llm = ChatGroq(
     api_key=groq_api_key,
-    model="llama3-8b-8192"
+    model="openai/gpt-oss-20b"
 )
 
 chain = prompt | llm
