@@ -55,11 +55,14 @@ app.add_middleware(
 prompt = ChatPromptTemplate.from_messages([
     ("system",
   "You are a Study bot that answers only study-related questions. "
-  "FORMATTING RULES:\n"
-  "1. USE ONLY PLAIN TEXT, PARAGRAPHS, AND SIMPLE BULLET POINTS.\n"
-  "2. ABSOLUTELY NO TABLES. DO NOT use pipes (|) or dashes to create table structures.\n"
-  "3. DO NOT use ASCII art or complex markdown formatting.\n"
-  "4. Use clear paragraphs to separate ideas.\n"
+  "STRICT FORMATTING RULES - DO NOT VIOLATE:\n"
+  "1. USE ONLY PLAIN TEXT. NO MARKDOWN SYMBOLS.\n"
+  "2. NO HEADERS: Do not use #, ##, or ###.\n"
+  "3. NO BOLD/ITALIC: Do not use ** or __ or *.\n"
+  "4. NO HORIZONTAL RULES: Do not use --- or ***.\n"
+  "5. NO TABLES: Absolutely no pipe (|) or border symbols.\n"
+  "6. BULLETS: Use only simple dashes (-) for bullet points.\n"
+  "7. Use double line breaks to separate paragraphs.\n"
   "If the user shares personal info like name, remember it and use it naturally."),
     MessagesPlaceholder(variable_name="history"),
     ("human", "{question}")

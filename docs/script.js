@@ -122,7 +122,14 @@ document.addEventListener('DOMContentLoaded', () => {
         content.classList.add('msg-content');
         
         if (role === 'bot') {
-            content.innerHTML = text.replace(/\n/g, '<br>');
+            // Safety filter to strip accidental markdown symbols
+            let cleanText = text
+                .replace(/[#*_{}\[\]()]/g, '') // Remove # * _ { } [ ] ( )
+                .replace(/-{3,}/g, '')         // Remove --- style lines
+                .replace(/\n\s*- /g, '\n• ')   // Convert markdown bullets to clean dots
+                .replace(/^\s*- /g, '• ');      // Convert starting bullet
+            
+            content.innerHTML = cleanText.replace(/\n/g, '<br>');
         } else {
             content.textContent = text;
         }
