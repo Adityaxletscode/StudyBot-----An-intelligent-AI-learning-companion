@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const userPassInput = document.getElementById('user-pass-input');
     const startChatBtn = document.getElementById('start-chat-btn');
     const inputArea = document.getElementById('input-area');
-    const switchUserBtn = document.getElementById('switch-user-btn');
+    const logoutBtn = document.getElementById('logout-btn');
 
     let userId = '';
     let userPass = '';
@@ -63,9 +63,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Handle Switch User
-    switchUserBtn.addEventListener('click', () => {
-        if (confirm("Switch user? Current session will be ended.")) {
+    // Handle Logout
+    logoutBtn.addEventListener('click', () => {
+        if (confirm("Are you sure you want to logout?")) {
             userId = '';
             userPass = '';
             userIdInput.value = '';
