@@ -3,7 +3,7 @@ langchain
 langchain_groq
 langchain_core
 langchain_community
-pymongo
+pymongo[srv]
 fastapi
 uvicorn
 python-multipart

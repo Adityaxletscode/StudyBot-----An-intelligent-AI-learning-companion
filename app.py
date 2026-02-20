@@ -33,7 +33,11 @@ app.mount("/docs", StaticFiles(directory="docs"), name="docs")
 
 @app.get("/")
 def get_index():
-    return FileResponse("docs/index.html")
+    return {"status": "online", "message": "Study Bot API is running. If you see this, the backend is working!"}
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
 
 class ChatRequest(BaseModel):
     question: str

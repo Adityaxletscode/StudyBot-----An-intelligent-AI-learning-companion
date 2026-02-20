@@ -6,13 +6,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const userIdInput = document.getElementById('user-id-input');
     const startChatBtn = document.getElementById('start-chat-btn');
     const inputArea = document.getElementById('input-area');
-
     const switchUserBtn = document.getElementById('switch-user-btn');
+
     let userId = '';
 
     // Set the API Base URL
-    // If running on GitHub Pages, point to your Render internal/external URL
-    // If running locally, use localhost
     const API_BASE_URL = window.location.hostname.includes('github.io') 
         ? 'https://studybot-an-intelligent-ai-learning.onrender.com' 
         : window.location.origin;
@@ -31,13 +29,9 @@ document.addEventListener('DOMContentLoaded', () => {
         authSection.style.display = 'none';
         inputArea.style.display = 'block';
         
-        // Clear screen before loading
         messagesContainer.innerHTML = '';
+        addMessage(`Profile connected: <b>${userId}</b>. Syncing your study history...`, 'bot');
         
-        // Show Loading/Welcome in Chat
-        addMessage(`Profile connected: <b>${userId}</b>. Your study history has been synced.`, 'bot');
-        
-        // Load history for this user
         loadHistory();
     });
 
@@ -72,19 +66,32 @@ document.addEventListener('DOMContentLoaded', () => {
         const typingId = showTypingIndicator();
 
         try {
-            // Use dynamic base URL for cross-environment support
+            // Increased timeout handling for Render cold starts
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
             const response = await fetch(`${API_BASE_URL}/chat`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                mode: 'cors',
                 body: JSON.stringify({
                     question: message,
                     user_id: userId
-                })
+                }),
+                signal: controller.signal
             });
 
-            if (!response.ok) throw new Error('Network response was not ok');
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Server responded with ${response.status}: ${errorText || 'Internal Server Error'}`);
+            }
+
             const data = await response.json();
-            
             removeTypingIndicator(typingId);
 
             if (data.response) {
@@ -93,9 +100,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 addMessage("I'm sorry, I'm having trouble thinking right now. Could you repeat that?", 'bot');
             }
         } catch (error) {
-            console.error('Error:', error);
+            console.error('Fetch Error:', error);
             removeTypingIndicator(typingId);
-            addMessage("I lost my connection to the study server. Please check your internet.", 'bot');
+            
+            let errorMsg = "I lost my connection to the study server.";
+            if (error.name === 'AbortError') {
+                errorMsg = "The server is taking too long to respond (Render might be waking up). Please try again in 30 seconds.";
+            } else {
+                errorMsg += `<br><small style="opacity:0.7">Error Details: ${error.message}</small>`;
+            }
+            
+            addMessage(errorMsg, 'bot');
         }
     });
 
@@ -106,7 +121,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const content = document.createElement('div');
         content.classList.add('msg-content');
         
-        // Use innerHTML for the bot to allow basic formatting (like <br> or bold)
         if (role === 'bot') {
             content.innerHTML = text.replace(/\n/g, '<br>');
         } else {
@@ -145,21 +159,20 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadHistory() {
         if (!userId) return;
         try {
-            const response = await fetch(`${API_BASE_URL}/history/${userId}`);
+            const response = await fetch(`${API_BASE_URL}/history/${userId}`, {
+                mode: 'cors'
+            });
             if (!response.ok) return;
             const history = await response.json();
             
             if (history && history.length > 0) {
-                // Clear initial welcome message if history exists to avoid double welcome
-                const welcomeMsg = messagesContainer.querySelector('.message.bot');
-                if (welcomeMsg) welcomeMsg.remove();
-                
+                messagesContainer.innerHTML = ''; // Full clear
                 history.forEach(item => {
                     addMessage(item.message, item.role === 'user' ? 'user' : 'bot');
                 });
             }
         } catch (err) {
-            console.warn('History not found or server error:', err);
+            console.warn('History sync error:', err);
         }
     }
 });
