@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="StudyBot - An intelligent AI learning companion"
+    />
+    <title>StudyBot | Your Intelligent Learning AI</title>
+    <link rel="stylesheet" href="style.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <div class="tablet-frame">
+      <main class="chat-main">
+        <header class="chat-header">
+          <div class="bot-profile">
+            <div class="bot-avatar">
+              <i class="fas fa-graduation-cap"></i>
+            </div>
+            <div class="bot-info">
+              <h2>StudyBot</h2>
+              <span class="online-status">Online</span>
+            </div>
+          </div>
+          <div class="header-actions">
+            <button id="switch-user-btn" class="action-btn" title="Switch User">
+              <i class="fas fa-user-friends"></i> <span>Switch User</span>
+            </button>
+            <button class="menu-btn"><i class="fas fa-ellipsis-v"></i></button>
+          </div>
+        </header>
+
+        <div class="messages-container" id="messages-container">
+          <!-- Messages will be injected here -->
+        </div>
+
+        <footer class="input-area" id="input-area" style="display: none">
+          <form id="chat-form" class="input-wrapper">
+            <textarea
+              id="user-input"
+              placeholder="Type a message..."
+              rows="1"
+            ></textarea>
+            <button type="submit" id="send-btn" class="send-btn">
+              <i class="fas fa-paper-plane"></i>
+            </button>
+          </form>
+        </footer>
+
+        <!-- Auth Section -->
+        <div id="auth-section" class="auth-overlay">
+          <div class="auth-content">
+            <i class="fas fa-university auth-icon"></i>
+            <p id="welcome-msg">
+              Hi I am a Study Bot — an AI-powered chatbot that helps users ask
+              questions related to study topics.
+            </p>
+            <div class="input-group">
+              <input
+                type="text"
+                id="user-id-input"
+                placeholder="Enter your User ID to start..."
+              />
+              <button id="start-chat-btn">
+                Connect to Profile <i class="fas fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="script.js"></script>
+  </body>
+</html>
