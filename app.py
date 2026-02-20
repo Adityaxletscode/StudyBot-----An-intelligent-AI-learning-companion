@@ -11,6 +11,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
+from passlib.context import CryptContext
+
 # -------- LOAD ENV --------
 load_dotenv()
 
@@ -24,7 +26,11 @@ client = MongoClient(
     connectTimeoutMS=5000
 )
 db = client["ChatBotDB"]
-collection = db["users"]
+messages_collection = db["messages"]
+users_collection = db["users"]
+
+# Password hashing context
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 app = FastAPI()
 
@@ -39,9 +45,14 @@ def get_index():
 def health_check():
     return {"status": "ok"}
 
+class AuthRequest(BaseModel):
+    user_id: str
+    password: str
+
 class ChatRequest(BaseModel):
     question: str
     user_id: str
+    password: str
 
 app.add_middleware(
     CORSMiddleware,
@@ -50,6 +61,33 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
+
+# -------- AUTH HELPERS --------
+def get_user(user_id):
+    return users_collection.find_one({"user_id": user_id})
+
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password):
+    return pwd_context.hash(password)
+
+@app.post("/auth")
+def authenticate(request: AuthRequest):
+    user = get_user(request.user_id)
+    if not user:
+        # Register new user
+        users_collection.insert_one({
+            "user_id": request.user_id,
+            "password": get_password_hash(request.password)
+        })
+        return {"status": "success", "message": "Account created"}
+    
+    # Check password
+    if not verify_password(request.password, user["password"]):
+        return JSONResponse(status_code=401, content={"status": "error", "message": "Invalid password"})
+    
+    return {"status": "success", "message": "Logged in"}
 
 # -------- PROMPT --------
 prompt = ChatPromptTemplate.from_messages([
@@ -71,14 +109,14 @@ prompt = ChatPromptTemplate.from_messages([
 # -------- MODEL --------
 llm = ChatGroq(
     api_key=groq_api_key,
-    model="openai/gpt-oss-20b"
+    model="llama3-8b-8192"
 )
 
 chain = prompt | llm
 
 # -------- HISTORY --------
 def get_history(user_id):
-    chats = collection.find({"user_id": user_id}).sort("timestamp", 1)
+    chats = messages_collection.find({"user_id": user_id}).sort("timestamp", 1)
     history = []
     for chat in chats:
         if chat["role"] == "user":
@@ -87,9 +125,13 @@ def get_history(user_id):
             history.append(AIMessage(content=chat["message"]))
     return history
 
-@app.get("/history/{user_id}")
-def get_chat_history(user_id: str):
-    chats = collection.find({"user_id": user_id}).sort("timestamp", 1)
+@app.post("/history")
+def get_chat_history(request: AuthRequest):
+    user = get_user(request.user_id)
+    if not user or not verify_password(request.password, user["password"]):
+        return JSONResponse(status_code=401, content={"status": "error", "message": "Unauthorized"})
+
+    chats = messages_collection.find({"user_id": request.user_id}).sort("timestamp", 1)
     history = []
     for chat in chats:
         history.append({
@@ -108,6 +150,10 @@ def chat(request: ChatRequest):
             content={"response": "ERROR: Backend configuration missing. Please add GROQ_API_KEY and MONGODB_URI to Render environment variables."}
         )
     
+    user = get_user(request.user_id)
+    if not user or not verify_password(request.password, user["password"]):
+        return JSONResponse(status_code=401, content={"response": "Unauthorized: Access denied."})
+
     try:
         history = get_history(request.user_id)
         response = chain.invoke({
@@ -121,7 +167,7 @@ def chat(request: ChatRequest):
         )
 
     # Save user msg
-    collection.insert_one({
+    messages_collection.insert_one({
         "user_id": request.user_id,
         "role": "user",
         "message": request.question,
@@ -129,7 +175,7 @@ def chat(request: ChatRequest):
     })
 
     # Save assistant msg
-    collection.insert_one({
+    messages_collection.insert_one({
         "user_id": request.user_id,
         "role": "assistant",
         "message": response.content,

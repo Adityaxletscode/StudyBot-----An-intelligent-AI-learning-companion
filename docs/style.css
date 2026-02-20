@@ -224,10 +224,11 @@ body {
 .input-group {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.25rem;
+    margin-top: 1rem;
 }
 
-#user-id-input {
+#user-id-input, #user-pass-input {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     padding: 1rem;
@@ -236,13 +237,19 @@ body {
     font-size: 1rem;
     outline: none;
     text-align: center;
+    transition: var(--transition-smooth);
+}
+
+#user-id-input:focus, #user-pass-input:focus {
+    border-color: var(--primary-color);
+    background: rgba(255, 255, 255, 0.1);
 }
 
 #start-chat-btn {
     background: var(--primary-color);
     color: white;
     border: none;
-    padding: 1rem;
+    padding: 1.1rem;
     border-radius: 12px;
     font-weight: 700;
     cursor: pointer;
@@ -251,6 +258,7 @@ body {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
+    margin-top: 0.5rem;
 }
 
 #start-chat-btn:hover {

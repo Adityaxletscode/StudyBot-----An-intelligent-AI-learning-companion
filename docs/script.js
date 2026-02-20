@@ -4,11 +4,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const messagesContainer = document.getElementById('messages-container');
     const authSection = document.getElementById('auth-section');
     const userIdInput = document.getElementById('user-id-input');
+    const userPassInput = document.getElementById('user-pass-input');
     const startChatBtn = document.getElementById('start-chat-btn');
     const inputArea = document.getElementById('input-area');
     const switchUserBtn = document.getElementById('switch-user-btn');
 
     let userId = '';
+    let userPass = '';
 
     // Set the API Base URL
     const API_BASE_URL = window.location.hostname.includes('github.io') 
@@ -17,29 +19,57 @@ document.addEventListener('DOMContentLoaded', () => {
 
     console.log("Using API Base URL:", API_BASE_URL);
 
-    // Handle Start Chat / Login
+    // Handle Start Chat / Login / Register
     startChatBtn.addEventListener('click', async () => {
         const id = userIdInput.value.trim();
-        if (!id) {
-            alert("Please enter a User ID to continue.");
+        const pass = userPassInput.value.trim();
+        
+        if (!id || !pass) {
+            alert("Please enter both Username and Password.");
             return;
         }
 
-        userId = id;
-        authSection.style.display = 'none';
-        inputArea.style.display = 'block';
-        
-        messagesContainer.innerHTML = '';
-        addMessage(`Profile connected: <b>${userId}</b>. Syncing your study history...`, 'bot');
-        
-        loadHistory();
+        startChatBtn.disabled = true;
+        startChatBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Authenticating...';
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/auth`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: id, password: pass })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                userId = id;
+                userPass = pass;
+                authSection.style.display = 'none';
+                inputArea.style.display = 'block';
+                
+                messagesContainer.innerHTML = '';
+                addMessage(`Profile connected: <b>${userId}</b>. Syncing your private study history...`, 'bot');
+                
+                loadHistory();
+            } else {
+                alert(data.message || "Authentication failed.");
+            }
+        } catch (err) {
+            console.error("Auth error:", err);
+            alert("Failed to connect to server. Check your internet.");
+        } finally {
+            startChatBtn.disabled = false;
+            startChatBtn.innerHTML = 'Sign In / Register <i class="fas fa-arrow-right"></i>';
+        }
     });
 
     // Handle Switch User
     switchUserBtn.addEventListener('click', () => {
-        if (confirm("Switch user? Current session will be ended and new history will load.")) {
+        if (confirm("Switch user? Current session will be ended.")) {
             userId = '';
+            userPass = '';
             userIdInput.value = '';
+            userPassInput.value = '';
             authSection.style.display = 'flex';
             inputArea.style.display = 'none';
             messagesContainer.innerHTML = '';
@@ -66,9 +96,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const typingId = showTypingIndicator();
 
         try {
-            // Increased timeout handling for Render cold starts
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+            const timeoutId = setTimeout(() => controller.abort(), 35000); 
 
             const response = await fetch(`${API_BASE_URL}/chat`, {
                 method: 'POST',
@@ -79,7 +108,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 mode: 'cors',
                 body: JSON.stringify({
                     question: message,
-                    user_id: userId
+                    user_id: userId,
+                    password: userPass
                 }),
                 signal: controller.signal
             });
@@ -87,8 +117,8 @@ document.addEventListener('DOMContentLoaded', () => {
             clearTimeout(timeoutId);
 
             if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Server responded with ${response.status}: ${errorText || 'Internal Server Error'}`);
+                const errorData = await response.json();
+                throw new Error(errorData.response || `Error ${response.status}`);
             }
 
             const data = await response.json();
@@ -96,21 +126,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (data.response) {
                 addMessage(data.response, 'bot');
-            } else {
-                addMessage("I'm sorry, I'm having trouble thinking right now. Could you repeat that?", 'bot');
             }
         } catch (error) {
             console.error('Fetch Error:', error);
             removeTypingIndicator(typingId);
-            
-            let errorMsg = "I lost my connection to the study server.";
-            if (error.name === 'AbortError') {
-                errorMsg = "The server is taking too long to respond (Render might be waking up). Please try again in 30 seconds.";
-            } else {
-                errorMsg += `<br><small style="opacity:0.7">Error Details: ${error.message}</small>`;
-            }
-            
-            addMessage(errorMsg, 'bot');
+            addMessage(`<b>Connection Error:</b> ${error.message}`, 'bot');
         }
     });
 
@@ -122,12 +142,11 @@ document.addEventListener('DOMContentLoaded', () => {
         content.classList.add('msg-content');
         
         if (role === 'bot') {
-            // Safety filter to strip accidental markdown symbols
             let cleanText = text
-                .replace(/[#*_{}\[\]()]/g, '') // Remove # * _ { } [ ] ( )
-                .replace(/-{3,}/g, '')         // Remove --- style lines
-                .replace(/\n\s*- /g, '\n• ')   // Convert markdown bullets to clean dots
-                .replace(/^\s*- /g, '• ');      // Convert starting bullet
+                .replace(/[#*_{}\[\]()]/g, '')
+                .replace(/-{3,}/g, '')
+                .replace(/\n\s*- /g, '\n• ')
+                .replace(/^\s*- /g, '• ');
             
             content.innerHTML = cleanText.replace(/\n/g, '<br>');
         } else {
@@ -166,14 +185,17 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadHistory() {
         if (!userId) return;
         try {
-            const response = await fetch(`${API_BASE_URL}/history/${userId}`, {
-                mode: 'cors'
+            const response = await fetch(`${API_BASE_URL}/history`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                mode: 'cors',
+                body: JSON.stringify({ user_id: userId, password: userPass })
             });
             if (!response.ok) return;
             const history = await response.json();
             
             if (history && history.length > 0) {
-                messagesContainer.innerHTML = ''; // Full clear
+                messagesContainer.innerHTML = '';
                 history.forEach(item => {
                     addMessage(item.message, item.role === 'user' ? 'user' : 'bot');
                 });
@@ -184,7 +206,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Pulse animation for typing dots
 const style = document.createElement('style');
 style.innerHTML = `
     @keyframes pulse {
