@@ -109,6 +109,8 @@ def authenticate(request: AuthRequest):
 prompt = ChatPromptTemplate.from_messages([
     ("system",
   "You are a Study bot that answers only study-related questions. "
+  "GREETING RULES:\n"
+  "If the user says 'hello', 'hi', or similar greetings, reply politely with 'Hello [username], how can I help you with your studies today?' (using the provided username).\n\n"
   "STRICT FORMATTING RULES - DO NOT VIOLATE:\n"
   "1. USE ONLY PLAIN TEXT. NO MARKDOWN SYMBOLS.\n"
   "2. NO HEADERS: Do not use #, ##, or ###.\n"
@@ -117,7 +119,7 @@ prompt = ChatPromptTemplate.from_messages([
   "5. NO TABLES: Absolutely no pipe (|) or border symbols.\n"
   "6. BULLETS: Use only simple dashes (-) for bullet points.\n"
   "7. Use double line breaks to separate paragraphs.\n"
-  "If the user shares personal info like name, remember it and use it naturally."),
+  "Current Username: {username}"),
     MessagesPlaceholder(variable_name="history"),
     ("human", "{question}")
 ])
@@ -132,6 +134,8 @@ chain = prompt | llm
 
 # -------- HISTORY --------
 def get_history(user_id):
+    if messages_collection is None:
+        return []
     chats = messages_collection.find({"user_id": user_id}).sort("timestamp", 1)
     history = []
     for chat in chats:
@@ -183,7 +187,8 @@ def chat(request: ChatRequest):
         history = get_history(request.user_id)
         response = chain.invoke({
             "history": history,
-            "question": request.question
+            "question": request.question,
+            "username": request.user_id
         })
     except Exception as e:
         return JSONResponse(
