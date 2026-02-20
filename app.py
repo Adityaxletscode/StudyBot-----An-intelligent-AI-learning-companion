@@ -77,10 +77,10 @@ def get_user(user_id):
     return users_collection.find_one({"user_id": user_id})
 
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+    return pwd_context.verify(plain_password[:72], hashed_password)
 
 def get_password_hash(password):
-    return pwd_context.hash(password)
+    return pwd_context.hash(password[:72])
 
 @app.post("/auth")
 def authenticate(request: AuthRequest):
