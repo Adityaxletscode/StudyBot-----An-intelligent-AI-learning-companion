@@ -20,14 +20,24 @@ groq_api_key = os.getenv("GROQ_API_KEY")
 mongo_uri = os.getenv("MONGODB_URI")
 
 # -------- MONGODB --------
-client = MongoClient(
-    mongo_uri,
-    serverSelectionTimeoutMS=5000,
-    connectTimeoutMS=5000
-)
-db = client["ChatBotDB"]
-messages_collection = db["messages"]
-users_collection = db["users"]
+try:
+    client = MongoClient(
+        mongo_uri,
+        serverSelectionTimeoutMS=5000,
+        connectTimeoutMS=5000,
+        tlsAllowInvalidCertificates=True # Helpful for some cloud environments
+    )
+    # Ping the database to verify connection
+    client.admin.command('ping')
+    db = client["ChatBotDB"]
+    messages_collection = db["messages"]
+    users_collection = db["users"]
+    print("Successfully connected to MongoDB Atlas")
+except Exception as e:
+    print(f"CRITICAL: MongoDB Connection Failed: {str(e)}")
+    # We don't crash here so the server can still respond with an error message
+    messages_collection = None
+    users_collection = None
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -74,20 +84,26 @@ def get_password_hash(password):
 
 @app.post("/auth")
 def authenticate(request: AuthRequest):
-    user = get_user(request.user_id)
-    if not user:
-        # Register new user
-        users_collection.insert_one({
-            "user_id": request.user_id,
-            "password": get_password_hash(request.password)
-        })
-        return {"status": "success", "message": "Account created"}
+    if users_collection is None:
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Database disconnected. Ensure 0.0.0.0/0 is allowed in MongoDB Atlas Network Access."})
     
-    # Check password
-    if not verify_password(request.password, user["password"]):
-        return JSONResponse(status_code=401, content={"status": "error", "message": "Invalid password"})
-    
-    return {"status": "success", "message": "Logged in"}
+    try:
+        user = get_user(request.user_id)
+        if not user:
+            # Register new user
+            users_collection.insert_one({
+                "user_id": request.user_id,
+                "password": get_password_hash(request.password)
+            })
+            return {"status": "success", "message": "Account created"}
+        
+        # Check password
+        if not verify_password(request.password, user["password"]):
+            return JSONResponse(status_code=401, content={"status": "error", "message": "Invalid password"})
+        
+        return {"status": "success", "message": "Logged in"}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"status": "error", "message": f"Auth Error: {str(e)}"})
 
 # -------- PROMPT --------
 prompt = ChatPromptTemplate.from_messages([
@@ -127,19 +143,25 @@ def get_history(user_id):
 
 @app.post("/history")
 def get_chat_history(request: AuthRequest):
+    if users_collection is None or messages_collection is None:
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Database unavailable."})
+
     user = get_user(request.user_id)
     if not user or not verify_password(request.password, user["password"]):
         return JSONResponse(status_code=401, content={"status": "error", "message": "Unauthorized"})
 
-    chats = messages_collection.find({"user_id": request.user_id}).sort("timestamp", 1)
-    history = []
-    for chat in chats:
-        history.append({
-            "role": chat["role"],
-            "message": chat["message"],
-            "timestamp": chat["timestamp"].isoformat() if "timestamp" in chat else None
-        })
-    return JSONResponse(content=history)
+    try:
+        chats = messages_collection.find({"user_id": request.user_id}).sort("timestamp", 1)
+        history = []
+        for chat in chats:
+            history.append({
+                "role": chat["role"],
+                "message": chat["message"],
+                "timestamp": chat["timestamp"].isoformat() if "timestamp" in chat else None
+            })
+        return JSONResponse(content=history)
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"status": "error", "message": f"DB Error: {str(e)}"})
 
 # -------- ROUTES --------
 @app.post("/chat")
@@ -150,11 +172,14 @@ def chat(request: ChatRequest):
             content={"response": "ERROR: Backend configuration missing. Please add GROQ_API_KEY and MONGODB_URI to Render environment variables."}
         )
     
-    user = get_user(request.user_id)
-    if not user or not verify_password(request.password, user["password"]):
-        return JSONResponse(status_code=401, content={"response": "Unauthorized: Access denied."})
+    if users_collection is None or messages_collection is None:
+        return JSONResponse(status_code=500, content={"response": "ERROR: Database disconnected. Check MongoDB Atlas IP Whitelist (allow 0.0.0.0/0)."})
 
     try:
+        user = get_user(request.user_id)
+        if not user or not verify_password(request.password, user["password"]):
+            return JSONResponse(status_code=401, content={"response": "Unauthorized: Access denied."})
+
         history = get_history(request.user_id)
         response = chain.invoke({
             "history": history,
