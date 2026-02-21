@@ -115,7 +115,7 @@ Handles:
 
 ### 🔑 Login Page
 
-![Login Page](login-poge.jpeg)
+![Login Page](login-page.jpeg)
 
 ### 💬 Chat Page
 
@@ -158,6 +158,7 @@ Study Bot demonstrates full-stack AI integration combining:
 It is a practical example of building an intelligent assistant with persistent memory.
 
 ---
+
 
 
 
