@@ -121,8 +121,6 @@ Handles:
 
 ![Chat Page](chat-page.jpeg)
 
-Make sure these images exist in the root folder of your GitHub repository.
-
 ---
 
 ## 🧪 Testing the API
@@ -158,6 +156,7 @@ Study Bot demonstrates full-stack AI integration combining:
 It is a practical example of building an intelligent assistant with persistent memory.
 
 ---
+
 
 
 
